@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teachable Machine</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.3/dist/teachablemachine-image.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    #webcam-container {
+      margin: 20px auto;
+      width: 300px;
+      height: 300px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    #label-container {
+      margin: 20px auto;
+      font-size: 18px;
+      color: #333;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 300px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .prediction {
+      margin: 5px 0;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .prediction span {
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div>Teachable Machine Image Model</div>
+  <button type="button" id="start-button" onclick="init()">Start</button>
+  <button type="button" id="flip-button" onclick="flipCamera()">Flip Camera</button>
+  <div id="webcam-container"></div>
+  <div id="label-container"></div>
+  <script type="text/javascript">
+    const URL = 'https://loetolex.github.io/Crops-Vergy-diseases-found-in-Botswana/'; // Replace with your hosted model URL
+
+    let model, webcam, labelContainer, maxPredictions;
+    let isFrontCamera = true;
+    let isInitialized = false;
+
+    async function init() {
+      if (isInitialized) return; // Prevent multiple initializations
+
+      const startButton = document.getElementById('start-button');
+      startButton.disabled = true; // Disable the Start button after first click
+
+      const modelURL = URL + 'model.json';
+      const metadataURL = URL + 'metadata.json';
+
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      await startWebcam(); // Start the webcam
+      isInitialized = true; // Mark as initialized
+    }
+
+    async function startWebcam() {
+      const flip = isFrontCamera; // Flip only for front camera
+      const width = 300;
+      const height = 300;
+      webcam = new tmImage.Webcam(width, height, flip);
+      await webcam.setup({ facingMode: isFrontCamera ? 'user' : 'environment' }); // Set front or back camera
+      document.getElementById('webcam-container').appendChild(webcam.canvas);
+      labelContainer = document.getElementById('label-container');
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement('div'));
+      }
+      webcam.play();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function flipCamera() {
+      if (!isInitialized) return; // Ensure the webcam is initialized first
+
+      isFrontCamera = !isFrontCamera; // Toggle camera
+      webcam.stop(); // Stop the current webcam
+
+      // Clear the webcam container
+      const webcamContainer = document.getElementById('webcam-container');
+      webcamContainer.innerHTML = '';
+
+      // Reinitialize the webcam with the new camera
+      await startWebcam();
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      labelContainer.innerHTML = ''; // Clear previous predictions
+      for (let i = 0; i < maxPredictions; i++) {
+        const classPrediction = `
+          <div class="prediction">
+            ${prediction[i].className}: <span>${(prediction[i].probability * 100).toFixed(2)}%</span>
+          </div>
+        `;
+        labelContainer.innerHTML += classPrediction;
+      }
+    }
+  </script>
+</body>
+</html>
+
