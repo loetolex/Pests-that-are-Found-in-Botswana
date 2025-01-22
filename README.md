@@ -7,6 +7,8 @@ How to use this model
 The model can be embedded in any app or website using the provided HTML file. You can also test the model using W3Schools, as depicted below.
 Step1
 
+Open the index.html, copy the contents and go paste it in w3schools.
+
 <img width="1440" alt="Screenshot 2025-01-22 at 08 05 21" src="https://github.com/user-attachments/assets/f4764726-f35c-4e88-a71e-9cfd4a3b5f97" />
 
 Step 2
